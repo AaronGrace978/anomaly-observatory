@@ -14,3 +14,6 @@ observatory = "anomaly_observatory.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["anomaly_observatory*"]
+
+[tool.setuptools.package-data]
+anomaly_observatory = ["web/*.html", "web/*.css", "web/*.js"]

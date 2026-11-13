@@ -4,7 +4,39 @@ A runnable software prototype for a **Synchronized Multimodal Anomaly Array**: m
 
 This measures physical sensor differences. It does not detect souls or establish spiritual causes. The included acquisition source is a **simulator**; physical pods, hardware drivers, synchronization, and calibration are not yet built or validated.
 
-## Run now
+## Launch the dashboard
+
+From the project directory, with Python 3.11+:
+
+```bash
+python -m anomaly_observatory serve
+```
+
+Open **http://127.0.0.1:8765** in your browser. No frontend build, Node installation, or Python runtime dependencies are needed.
+
+The local dashboard provides:
+
+- Paired pod charts for all four channels, with explicit simulation/import labels.
+- A one-click demonstration, simulated recordings, and validated CSV imports.
+- Baseline selection and a frozen screening protocol, required before a trial is analyzed.
+- Channel RMS values, thresholds, flags, recording checksums, and CSV/JSON downloads.
+- A recording archive that persists across server restarts.
+- Blinded schedules with separately stored operator keys.
+- Ollama Cloud model discovery and advisory review of a selected trial result.
+
+Start with **Load demonstration**, or choose **New recording → Baseline**, freeze its protocol under **Detection protocol**, then create a **Trial & analysis** using that frozen baseline. A baseline is a noise reference; the app does not certify hardware calibration. Chart traces are reduced to approximately 600 points for display only; the full recording is used in analysis and raw downloads.
+
+Dashboard files are stored in `data/ui/` and custodian keys in `private/ui/`, both ignored by Git. The private key is never served to the browser. Keep it with an independent operator. This is an analyst interface, not an access-controlled multi-user research system: anyone with filesystem access to the server account can read its files.
+
+For AI review, set `OLLAMA_API_KEY` in the server's environment before launch, then use **AI review → Refresh models**. The key stays on the Python server. A review request sends only the selected result JSON to Ollama Cloud; it does not send raw CSVs or blinded labels, and does not alter numerical results. AI notes are shown in the browser and are not automatically archived.
+
+The server binds to loopback only and checks request hosts, origins, and a per-process request token. It is intended to run on your own computer. Do not expose it directly to a public network. Override local storage locations or port if needed:
+
+```bash
+python -m anomaly_observatory serve --port 8800 --data-dir data/ui --private-dir private/ui
+```
+
+## Run the CLI
 
 Python 3.11+; the core has no third-party runtime dependencies. From this directory:
 
@@ -55,6 +87,6 @@ See [hardware guide](docs/HARDWARE.md) and [experiment protocol](docs/PROTOCOL.m
 
 ## Project status
 
-Implemented: deterministic paired simulation; complete simulated recording; integrity hashes; baseline protocol; paired RMS screening; randomized condition key; pod swaps; cloud model discovery and advisory reports; CLI; automated tests and GitHub Actions.
+Implemented: local web dashboard; deterministic paired simulation; complete simulated recording; integrity hashes; baseline protocol; paired RMS screening; randomized condition key; pod swaps; cloud model discovery and advisory reports; CLI; automated tests and GitHub Actions.
 
 Next hardware milestones: choose DAQ and sensor ranges; implement a real hardware adapter and continuous recorder; validate shared-clock skew; calibrate each channel and preserve calibration manifests; expand the data model for independent native-rate streams and dummy channels. Before scientific claims, add a separately reviewed statistical protocol with independent trials, an appropriate null model, multiplicity control and independent replication.

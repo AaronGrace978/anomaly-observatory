@@ -18,6 +18,10 @@ def main():
     sub.add_parser('models', help='List currently available Ollama Cloud models')
     ai = sub.add_parser('explain', help='Send only the selected result JSON to Ollama Cloud')
     ai.add_argument('report'); ai.add_argument('--model', required=True)
+    ui = sub.add_parser('serve', help='Launch the local web dashboard')
+    ui.add_argument('--port', type=int, default=8765)
+    ui.add_argument('--data-dir', default='data/ui')
+    ui.add_argument('--private-dir', default='private/ui')
     args = parser.parse_args()
     try:
         if args.command == 'simulate':
@@ -34,5 +38,8 @@ def main():
             print(json.dumps(ollama.models(), indent=2))
         elif args.command == 'explain':
             print(ollama.explain(json.loads(Path(args.report).read_text()), args.model))
+        elif args.command == 'serve':
+            from .server import serve
+            serve(args.port, args.data_dir, args.private_dir)
     except (ValueError, OSError, KeyError, TypeError) as exc:
         parser.exit(1, f'Error: {exc}\n')
