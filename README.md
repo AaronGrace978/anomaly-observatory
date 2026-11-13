@@ -28,7 +28,7 @@ Start with **Load demonstration**, or choose **New recording → Baseline**, fre
 
 Dashboard files are stored in `data/ui/` and custodian keys in `private/ui/`, both ignored by Git. The private key is never served to the browser. Keep it with an independent operator. This is an analyst interface, not an access-controlled multi-user research system: anyone with filesystem access to the server account can read its files.
 
-For AI review, set `OLLAMA_API_KEY` in the server's environment before launch, then use **AI review → Refresh models**. The key stays on the Python server. A review request sends only the selected result JSON to Ollama Cloud; it does not send raw CSVs or blinded labels, and does not alter numerical results. AI notes are shown in the browser and are not automatically archived.
+For AI review, open **AI review** and paste an Ollama API key, or set `OLLAMA_API_KEY` before launch. The saved key stays in the server's private directory and is not returned to the browser. Then use **Refresh models**. A review request sends only the selected result JSON to Ollama Cloud; it does not send raw CSVs or blinded labels, and does not alter numerical results. AI notes are shown in the browser and are not automatically archived.
 
 The server binds to loopback only and checks request hosts, origins, and a per-process request token. It is intended to run on your own computer. Do not expose it directly to a public network. Override local storage locations or port if needed:
 

@@ -119,7 +119,24 @@ class DashboardTests(unittest.TestCase):
             status, response = self.call('/api/explain', dict(id=run['id'],model='current-model'))
             self.assertEqual(status, 200)
             self.assertEqual(response['text'], 'Advisory notes')
-            explain.assert_called_once_with(run['report'], 'current-model')
+            explain.assert_called_once_with(run['report'], 'current-model', None)
+
+    def test_saved_cloud_key_stays_on_the_server(self):
+        secret = 'dashboard-key-not-for-the-browser'
+        self.assertFalse(self.call('/api/state')[1]['cloud_configured'])
+        self.assertEqual(self.call('/api/cloud-key', dict(key=' bad key'))[0], 400)
+        status, saved = self.call('/api/cloud-key', dict(key=secret))
+        self.assertEqual(status, 200, saved)
+        self.assertEqual(saved, dict(cloud_configured=True))
+        self.assertNotIn(secret, json.dumps(saved))
+        state = self.call('/api/state')[1]
+        self.assertTrue(state['cloud_configured'])
+        self.assertNotIn(secret, json.dumps(state))
+        self.assertEqual((self.store.private/'ollama-api-key').read_text().strip(), secret)
+        self.assertEqual(self.call('/private/ollama-api-key')[0], 404)
+        with patch('anomaly_observatory.server.ollama.models', return_value={'models': []}) as models:
+            self.assertEqual(self.call('/api/models', {})[0], 200)
+            models.assert_called_once_with(secret)
 
     def test_invalid_parameters_fail_without_partial_recording(self):
         for field, value in [('seconds', 0), ('seconds', 301), ('rate', 1.5), ('seed', -1), ('injection', float('inf'))]:

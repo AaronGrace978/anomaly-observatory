@@ -95,12 +95,12 @@ async function refresh(preferred) {
   options($('trial-baseline'), baselines.filter(run => run.protocol), 'Choose a frozen protocol');
   options($('review-run'), trials, 'Choose an analyzed trial');
   if (trials.some(run => run.id === selected)) $('review-run').value = selected;
-  $('cloud-status').textContent = state.cloud_configured ? 'Ollama Cloud configured' : 'Cloud not configured';
+  $('cloud-status').textContent = state.cloud_configured ? 'Cloud models ready' : 'Add cloud API key';
   $('ai-badge').textContent = state.cloud_configured ? 'KEY CONFIGURED' : 'NOT CONFIGURED';
   $('ai-badge').className = `badge ${state.cloud_configured ? 'simulated' : ''}`;
   $('cloud-help').textContent = state.cloud_configured
-    ? 'The key is configured on the server. Refresh the current model catalog to begin.'
-    : 'Set OLLAMA_API_KEY in the environment where you start the server, then restart it. The key is never entered in the browser.';
+    ? 'A key is saved on this server and is not shown again. Paste a new key to replace it, then refresh the model list.'
+    : 'Paste an Ollama API key and save it. The key stays on this computer and is not sent back to the page.';
   if (!selectedPlan || !state.plans.some(plan => plan.id === selectedPlan)) selectedPlan = state.plans[0]?.id || '';
   options($('plan-select'), state.plans.map(p => ({id:p.id, label:`${new Date(p.created).toLocaleString()} · ${p.runs.length} runs`})), 'No plan generated', selectedPlan);
   renderArchive(); renderProtocol(); renderPlan();
@@ -319,6 +319,18 @@ $('download-plan').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(plan.runs,null,2)],{type:'application/json'}));
   const link=el('a',{href:url,download:`blinded-plan-${plan.id}.json`});
   document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+$('cloud-status').addEventListener('click',()=>setTimeout(()=>$('cloud-key').focus(),0));
+$('cloud-key-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  action($('save-cloud-key'),async()=>{
+    const key=$('cloud-key').value.trim();
+    if(!key) throw new Error('Paste an Ollama API key.');
+    await api('/api/cloud-key',{key});
+    $('cloud-key').value='';
+    await refresh();
+    notify('API key saved on this server. Refresh models to load the catalog.');
+  },'Saving…');
 });
 $('refresh-models').addEventListener('click',event=>{
   action(event.currentTarget,async()=>{

@@ -54,7 +54,7 @@ class Workspace:
             plans = [json.loads(p.read_text()) for p in self.root.glob('plan-*.json')]
         return dict(runs=sorted(runs, key=lambda r: r['created'], reverse=True),
                     plans=sorted(plans, key=lambda p: p['created'], reverse=True),
-                    cloud_configured=bool(os.environ.get('OLLAMA_API_KEY')))
+                    cloud_configured=bool(self.cloud_key()))
 
     def create(self, data):
         kind = data.get('kind')
@@ -144,6 +144,25 @@ class Workspace:
         core.save_new(self.root / f'plan-{plan_id}.json', value)
         public.unlink()
         return value
+
+    def cloud_key(self):
+        path = self.private / 'ollama-api-key'
+        if path.is_file():
+            saved = path.read_text(encoding='utf-8').strip()
+            if saved:
+                return saved
+        return os.environ.get('OLLAMA_API_KEY') or None
+
+    def save_cloud_key(self, key):
+        if not isinstance(key, str):
+            raise ValueError('Paste an Ollama API key')
+        key = key.strip()
+        if not key or len(key) > 256 or any(character.isspace() for character in key):
+            raise ValueError('Paste an Ollama API key with no spaces')
+        path = self.private / 'ollama-api-key'
+        path.write_text(key + '\n', encoding='utf-8')
+        path.chmod(0o600)
+        return dict(cloud_configured=True)
 
     def demo(self):
         baseline = self.create(dict(kind='baseline', source='simulate', label='Demo · quiet baseline', seed=42))
@@ -238,7 +257,7 @@ class Handler(BaseHTTPRequestHandler):
             store = self.server.workspace
             path = urlsplit(self.path).path
             if path == '/api/models':
-                return self.reply(200, ollama.models())
+                return self.reply(200, ollama.models(store.cloud_key()))
             if path == '/api/explain':
                 run = store.metadata(data.get('id'))
                 if 'report' not in run:
@@ -246,9 +265,11 @@ class Handler(BaseHTTPRequestHandler):
                 model = data.get('model')
                 if not isinstance(model, str) or not model.strip() or len(model) > 200:
                     raise ValueError('Choose an available model')
-                return self.reply(200, dict(text=ollama.explain(run['report'], model)))
+                return self.reply(200, dict(text=ollama.explain(run['report'], model, store.cloud_key())))
             with store.lock:
-                if path == '/api/record':
+                if path == '/api/cloud-key':
+                    value = store.save_cloud_key(data.get('key'))
+                elif path == '/api/record':
                     value = store.create(data)
                 elif path == '/api/freeze':
                     value = store.freeze(data)
